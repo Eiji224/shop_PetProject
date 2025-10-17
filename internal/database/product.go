@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"time"
 
 	"gorm.io/gorm"
@@ -20,4 +21,11 @@ type Product struct {
 	CreatedAt   time.Time `gorm:"not null"`
 
 	Category Category `gorm:"foreignKey:CategoryID"`
+}
+
+func (pm *ProductModel) GetAll(ctx context.Context) ([]Product, error) {
+	var products []Product
+	err := pm.DB.WithContext(ctx).Find(&products).Error
+
+	return products, err
 }

@@ -1,4 +1,30 @@
 definitions:
+  database.Category:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  database.Product:
+    properties:
+      category:
+        $ref: '#/definitions/database.Category'
+      categoryID:
+        type: integer
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      imageUrl:
+        type: string
+      name:
+        type: string
+      price:
+        type: integer
+    type: object
   services.LoginRequest:
     properties:
       password:
@@ -44,7 +70,7 @@ info:
   title: Shop
   version: "1.0"
 paths:
-  /api/v1/login:
+  /api/v1/auth/login:
     post:
       consumes:
       - application/json
@@ -84,7 +110,7 @@ paths:
       summary: Login user
       tags:
       - Auth
-  /api/v1/register:
+  /api/v1/auth/register:
     post:
       consumes:
       - application/json
@@ -115,12 +141,43 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Register a new user
+      summary: Registers a new user
       tags:
       - Auth
+  /api/v1/products:
+    get:
+      consumes:
+      - application/json
+      description: Returns all products
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/database.Product'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Returns all products
+      tags:
+      - Products
 securityDefinitions:
-  BearerAuth:
-    description: Enter your bearer token in the format **Bearer &lt;token&gt;**
+  ApiKeyAuth:
+    description: Type "Bearer" followed by a space and JWT token.
     in: header
     name: Authorization
     type: apiKey

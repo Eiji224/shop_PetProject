@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"shop/internal/database"
 	"shop/internal/services"
@@ -11,7 +12,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// @Summary Register a new user
+// Register user
+// @Summary Registers a new user
 // @Description Create a new user account with email, username, and password.
 // @Tags Auth
 // @Accept json
@@ -20,7 +22,7 @@ import (
 // @Success 201 {object} services.RegisterResponse "Created user"
 // @Failure 400 {object} map[string]string "Invalid input (validation error)"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /api/v1/register [post]
+// @Router /api/v1/auth/register [post]
 func (r *Router) Register(c *gin.Context) {
 	var register services.RegisterRequest
 
@@ -41,7 +43,10 @@ func (r *Router) Register(c *gin.Context) {
 		Password: string(hashedPassword),
 		Email:    register.Email,
 	}
-	err = r.models.Users.Insert(&user)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	err = r.models.Users.Insert(&user, ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Couldn't create user"})
 		return
@@ -56,7 +61,7 @@ func (r *Router) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, services.RegisterResponse{Email: register.Email, Username: register.Username, Token: token})
 }
 
-// login authenticates a user and returns a JWT token
+// Login authenticates a user and returns a JWT token
 // @Summary Login user
 // @Description Authenticate user by username and password and return a JWT token
 // @Tags Auth
@@ -67,7 +72,7 @@ func (r *Router) Register(c *gin.Context) {
 // @Failure 400 {object} map[string]string "Invalid input (validation error)"
 // @Failure 401 {object} map[string]string "Invalid username or password"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /api/v1/login [post]
+// @Router /api/v1/auth/login [post]
 func (r *Router) Login(c *gin.Context) {
 	var login services.LoginRequest
 
@@ -76,7 +81,9 @@ func (r *Router) Login(c *gin.Context) {
 		return
 	}
 
-	existingUser, err := r.models.Users.FindByUsername(login.Username)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	existingUser, err := r.models.Users.FindByUsername(login.Username, ctx)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		return

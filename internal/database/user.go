@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -18,18 +17,18 @@ type User struct {
 	Password string `gorm:"size:255;not null"`
 }
 
-func (u *UserModel) Insert(user *User) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
+func (u *UserModel) Insert(user *User, ctx context.Context) error {
 	result := u.DB.WithContext(ctx).Create(user)
 	return result.Error
 }
 
-func (u *UserModel) FindByUsername(username string) (*User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+func (u *UserModel) FindById(id uint, ctx context.Context) (*User, error) {
+	var user User
+	result := u.DB.WithContext(ctx).First(&user, id)
+	return &user, result.Error
+}
 
+func (u *UserModel) FindByUsername(username string, ctx context.Context) (*User, error) {
 	var user User
 	result := u.DB.WithContext(ctx).Where("username = ?", username).First(&user)
 	return &user, result.Error

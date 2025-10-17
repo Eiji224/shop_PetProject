@@ -6,19 +6,20 @@ import (
 	"shop/internal/database"
 	"shop/internal/env"
 
+	_ "shop/docs"
+
 	_ "github.com/joho/godotenv/autoload"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	_ "shop/docs"
 )
 
 // @title Shop
 // @version 1.0
 // @description A Shop wrote by Go using Gin framework
-// @securityDefinitions.apikey BearerAuth
+// @securityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name Authorization
-// @description Enter your bearer token in the format **Bearer &lt;token&gt;**
+// @description Type "Bearer" followed by a space and JWT token.
 func main() {
 	db := connectDB()
 	err := db.AutoMigrate(&database.User{}, &database.Category{}, &database.Product{}, &database.Cart{},

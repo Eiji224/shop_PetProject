@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"shop/internal/database"
+	"shop/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -20,11 +21,18 @@ func GetRouter(jwtSecret string, models *database.Models) *Router {
 
 func (r *Router) Route() http.Handler {
 	g := gin.Default()
+	m := middleware.GetMiddleware(r.jwtSecret, r.models)
 
 	v1 := g.Group("/api/v1")
 	{
-		v1.POST("/register", r.Register)
-		v1.POST("/login", r.Login)
+		v1.POST("/auth/register", r.Register)
+		v1.POST("/auth/login", r.Login)
+	}
+
+	authGroup := v1.Group("/")
+	authGroup.Use(m.AuthMiddleware())
+	{
+		authGroup.GET("/products", r.GetAllProducts)
 	}
 
 	g.GET("/swagger/*any", func(c *gin.Context) {
