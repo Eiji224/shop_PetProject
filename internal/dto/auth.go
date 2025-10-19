@@ -1,6 +1,4 @@
-package services
-
-type UserService interface{}
+package dto
 
 type RegisterRequest struct {
 	Email    string `json:"email" binding:"required,email"`

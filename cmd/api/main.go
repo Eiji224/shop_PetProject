@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
+	_ "shop/docs"
 	"shop/internal/app"
 	"shop/internal/database"
 	"shop/internal/env"
-
-	_ "shop/docs"
 
 	_ "github.com/joho/godotenv/autoload"
 	"gorm.io/driver/mysql"

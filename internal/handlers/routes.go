@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"shop/internal/database"
 	"shop/internal/middleware"
+	"shop/internal/services"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -13,10 +14,11 @@ import (
 type Router struct {
 	jwtSecret string
 	models    *database.Models
+	services  *services.Services
 }
 
-func GetRouter(jwtSecret string, models *database.Models) *Router {
-	return &Router{jwtSecret: jwtSecret, models: models}
+func GetRouter(jwtSecret string, models *database.Models, services *services.Services) *Router {
+	return &Router{jwtSecret: jwtSecret, models: models, services: services}
 }
 
 func (r *Router) Route() http.Handler {
