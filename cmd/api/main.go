@@ -9,7 +9,7 @@ import (
 	_ "shop/docs"
 
 	_ "github.com/joho/godotenv/autoload"
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
@@ -38,15 +38,14 @@ func main() {
 
 func connectDB() *gorm.DB {
 	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=true&loc=Local",
+		env.GetEnvString("DB_USER", "mysql"),
+		env.GetEnvString("DB_PASSWORD", "mysql"),
 		env.GetEnvString("DB_HOST", "localhost"),
 		env.GetEnvString("DB_PORT", "5432"),
-		env.GetEnvString("DB_USER", "postgres"),
-		env.GetEnvString("DB_PASSWORD", "postgres"),
-		env.GetEnvString("DB_NAME", "postgres"),
-		env.GetEnvString("DB_SSLMODE", "disable"),
+		env.GetEnvString("DB_NAME", "mysql"),
 	)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
