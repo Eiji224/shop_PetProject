@@ -42,6 +42,7 @@ func (r *Router) Register(c *gin.Context) {
 		Username: register.Username,
 		Password: string(hashedPassword),
 		Email:    register.Email,
+		Type:     register.Type,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

@@ -15,6 +15,7 @@ type User struct {
 	Username string `gorm:"size:100;not null"`
 	Email    string `gorm:"uniqueIndex;size:100;not null"`
 	Password string `gorm:"size:255;not null"`
+	Type     string `gorm:"size:100;not null"`
 }
 
 func (u *UserModel) Insert(user *User, ctx context.Context) error {
