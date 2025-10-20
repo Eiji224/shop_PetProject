@@ -12,8 +12,8 @@ type CartItemModel struct {
 
 type CartItem struct {
 	ID        uint      `gorm:"primaryKey;AUTO_INCREMENT"`
-	CartID    uint      `gorm:"primaryKey;not null"`
-	ProductID uint      `gorm:"primaryKey;not null"`
+	CartID    uint      `gorm:"not null"`
+	ProductID uint      `gorm:"not null"`
 	Quantity  int       `gorm:"not null"`
 	CreatedAt time.Time `gorm:"not null"`
 

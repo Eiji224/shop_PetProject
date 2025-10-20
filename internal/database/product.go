@@ -15,7 +15,7 @@ type Product struct {
 	ID          uint      `gorm:"primaryKey;AUTO_INCREMENT"`
 	Name        string    `gorm:"size:100;not null"`
 	Description string    `gorm:"size:255"`
-	Price       int       `gorm:"not null"`
+	Price       float64   `gorm:"not null"`
 	ImageUrl    string    `gorm:"size:255"`
 	CategoryID  uint      `gorm:"not null"`
 	CreatedAt   time.Time `gorm:"not null"`

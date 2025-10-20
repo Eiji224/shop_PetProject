@@ -16,6 +16,8 @@ type User struct {
 	Email    string `gorm:"uniqueIndex;size:100;not null"`
 	Password string `gorm:"size:255;not null"`
 	Type     string `gorm:"size:100;not null"`
+
+	Cart *Cart `gorm:"constraint:OnDelete:CASCADE;"`
 }
 
 func (u *UserModel) Insert(user *User, ctx context.Context) error {
