@@ -13,8 +13,8 @@ import (
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param user body services.RegisterRequest true "User registration data"
-// @Success 201 {object} services.RegisterResponse "Created user"
+// @Param user body dto.RegisterRequest true "User registration data"
+// @Success 201 {object} dto.RegisterResponse "Created user"
 // @Failure 400 {object} map[string]string "Invalid input (validation error)"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /api/v1/auth/register [post]
@@ -40,8 +40,8 @@ func (r *Router) Register(c *gin.Context) {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param credentials body services.LoginRequest true "User login credentials"
-// @Success 200 {object} services.LoginResponse "JWT token"
+// @Param credentials body dto.LoginRequest true "User login credentials"
+// @Success 200 {object} dto.LoginResponse "JWT token"
 // @Failure 400 {object} map[string]string "Invalid input (validation error)"
 // @Failure 401 {object} map[string]string "Invalid username or password"
 // @Failure 500 {object} map[string]string "Internal server error"

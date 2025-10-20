@@ -23,9 +23,31 @@ type Product struct {
 	Category Category `gorm:"foreignKey:CategoryID"`
 }
 
+func (pm *ProductModel) GetProduct(ctx context.Context, id uint) (*Product, error) {
+	var product Product
+	err := pm.DB.WithContext(ctx).First(&product, id).Error
+
+	return &product, err
+}
+
 func (pm *ProductModel) GetAll(ctx context.Context) ([]Product, error) {
 	var products []Product
 	err := pm.DB.WithContext(ctx).Find(&products).Error
 
 	return products, err
+}
+
+func (pm *ProductModel) CreateProduct(ctx context.Context, product *Product) error {
+	err := pm.DB.WithContext(ctx).Create(product).Error
+	return err
+}
+
+func (pm *ProductModel) UpdateProduct(ctx context.Context, product *Product) error {
+	err := pm.DB.WithContext(ctx).Save(product).Error
+	return err
+}
+
+func (pm *ProductModel) DeleteProduct(ctx context.Context, id uint) error {
+	err := pm.DB.WithContext(ctx).Delete(&Product{}, id).Error
+	return err
 }

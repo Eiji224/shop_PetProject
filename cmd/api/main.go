@@ -21,11 +21,6 @@ import (
 // @description Type "Bearer" followed by a space and JWT token.
 func main() {
 	db := connectDB()
-	err := db.AutoMigrate(&database.User{}, &database.Category{}, &database.Product{}, &database.Cart{},
-		&database.CartItem{}, &database.Order{}, &database.OrderItem{})
-	if err != nil {
-		panic(err)
-	}
 
 	models := database.NewModels(db)
 	application := app.GetApplication(models)

@@ -27,6 +27,9 @@ func (r *Router) Route() http.Handler {
 
 	v1 := g.Group("/api/v1")
 	{
+		v1.GET("/products", r.getAllProducts)
+		v1.GET("/products/:id", r.getProduct)
+
 		v1.POST("/auth/register", r.Register)
 		v1.POST("/auth/login", r.Login)
 	}
@@ -34,7 +37,9 @@ func (r *Router) Route() http.Handler {
 	authGroup := v1.Group("/")
 	authGroup.Use(m.AuthMiddleware())
 	{
-		authGroup.GET("/products", r.GetAllProducts)
+		authGroup.POST("/products", r.createProduct)
+		authGroup.PUT("/products/:id", r.updateProduct)
+		authGroup.DELETE("/products/:id", r.deleteProduct)
 	}
 
 	g.GET("/swagger/*any", func(c *gin.Context) {
