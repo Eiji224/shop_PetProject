@@ -7,6 +7,7 @@ import (
 	"shop/internal/dto"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -60,6 +61,19 @@ func (as *AuthService) Login(req dto.LoginRequest) (resp *dto.LoginResponse, err
 	}
 
 	return &dto.LoginResponse{Token: token}, "", http.StatusOK
+}
+
+func (as *AuthService) GetUserFromContext(c *gin.Context) *database.User {
+	cUser, exist := c.Get("user")
+	if !exist {
+		return nil
+	}
+	user, ok := cUser.(*database.User)
+	if !ok {
+		return nil
+	}
+
+	return user
 }
 
 func (as *AuthService) getJwtToken(user *database.User) (string, error) {

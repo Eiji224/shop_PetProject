@@ -18,6 +18,7 @@ type Product struct {
 	Price       float64   `gorm:"not null"`
 	ImageUrl    string    `gorm:"size:255"`
 	CategoryID  uint      `gorm:"not null"`
+	UserID      uint      `gorm:"not null"`
 	CreatedAt   time.Time `gorm:"not null"`
 
 	Category Category `gorm:"foreignKey:CategoryID"`

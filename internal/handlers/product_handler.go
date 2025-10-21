@@ -94,6 +94,7 @@ func (r *Router) getAllProducts(c *gin.Context) {
 // @Success 201 {object} dto.ProductResponse
 // @Failure 400 {object} map[string]string "Bad request"
 // @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Security ApiKeyAuth
 // @Router /api/v1/products [post]
@@ -104,15 +105,15 @@ func (r *Router) createProduct(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	//cUser, exists := c.Get("user")
-	//user, ok := cUser.(database.User)
-	//if !exists || !ok {
-	//	c.AbortWithStatus(http.StatusUnauthorized)
-	//	return
-	//}
-	//
-	//product.sellerId = user.ID
+	user := r.services.AuthService.GetUserFromContext(c)
+	if user == nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "You are unauthorized"})
+		return
+	}
+	if user.Type != string(dto.TypeSeller) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "You are not allow to create product"})
+		return
+	}
 
 	product := database.Product{
 		Name:        createReq.Name,
@@ -120,6 +121,7 @@ func (r *Router) createProduct(c *gin.Context) {
 		Price:       createReq.Price,
 		ImageUrl:    createReq.ImageUrl,
 		CategoryID:  createReq.CategoryID,
+		UserID:      user.ID,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -136,6 +138,7 @@ func (r *Router) createProduct(c *gin.Context) {
 		Price:       product.Price,
 		ImageUrl:    product.ImageUrl,
 		CategoryID:  product.CategoryID,
+		UserID:      user.ID,
 		CreatedAt:   product.CreatedAt,
 	}
 
@@ -153,6 +156,7 @@ func (r *Router) createProduct(c *gin.Context) {
 // @Success 200 {object} dto.ProductResponse
 // @Failure 400 {object} map[string]string "Bad request"
 // @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden"
 // @Failure 404 {object} map[string]string "Not found"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Security ApiKeyAuth
@@ -163,12 +167,12 @@ func (r *Router) updateProduct(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	//cUser, exists := c.Get("user")
-	//user, ok := cUser.(database.User)
-	//if !exists || !ok {
-	//	c.AbortWithStatus(http.StatusUnauthorized)
-	//	return
-	//}
+	user := r.services.AuthService.GetUserFromContext(c)
+	if user == nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "You are unauthorized"})
+		return
+	}
+
 	ctx, getCancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer getCancel()
 	existingProduct, err := r.models.Products.GetProduct(ctx, uint(id))
@@ -180,10 +184,11 @@ func (r *Router) updateProduct(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Product not found"})
 		return
 	}
-	//if user.ID != existingProduct.ID {
-	//	c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to update this product"})
-	//	return
-	//}
+	if user.ID != existingProduct.UserID || user.Type != string(dto.TypeSeller) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to update this product"})
+		return
+	}
+
 	updateReq := dto.CreateUpdateProductRequest{}
 	if err := c.ShouldBindJSON(&updateReq); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -199,6 +204,7 @@ func (r *Router) updateProduct(c *gin.Context) {
 
 	updatedProduct.ID = uint(id)
 	updatedProduct.CreatedAt = existingProduct.CreatedAt
+	updatedProduct.UserID = user.ID
 
 	ctx, updateCancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer updateCancel()
@@ -214,6 +220,7 @@ func (r *Router) updateProduct(c *gin.Context) {
 		Price:       updatedProduct.Price,
 		ImageUrl:    updatedProduct.ImageUrl,
 		CategoryID:  updatedProduct.CategoryID,
+		UserID:      user.ID,
 		CreatedAt:   updatedProduct.CreatedAt,
 	}
 
@@ -230,6 +237,7 @@ func (r *Router) updateProduct(c *gin.Context) {
 // @Param id path uint true "Product Id"
 // @Failure 400 {object} map[string]string "Bad request"
 // @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden"
 // @Failure 404 {object} map[string]string "Not found"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Security ApiKeyAuth
@@ -240,12 +248,12 @@ func (r *Router) deleteProduct(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	//cUser, exists := c.Get("user")
-	//user, ok := cUser.(database.User)
-	//if !exists || !ok {
-	//	c.AbortWithStatus(http.StatusUnauthorized)
-	//	return
-	//}
+	user := r.services.AuthService.GetUserFromContext(c)
+	if user == nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "You are unauthorized"})
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	existingProduct, err := r.models.Products.GetProduct(ctx, uint(id))
@@ -257,10 +265,10 @@ func (r *Router) deleteProduct(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Product not found"})
 		return
 	}
-	//if user.ID != existingProduct.ID {
-	//	c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to delete this product"})
-	//	return
-	//}
+	if user.ID != existingProduct.UserID || user.Type != string(dto.TypeSeller) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to delete this product"})
+		return
+	}
 	if err := r.models.Products.DeleteProduct(ctx, uint(id)); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete product"})
 		return
