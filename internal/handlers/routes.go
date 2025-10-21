@@ -29,6 +29,7 @@ func (r *Router) Route() http.Handler {
 	{
 		v1.GET("/products", r.getAllProducts)
 		v1.GET("/products/:id", r.getProduct)
+		v1.GET("/users/:id/products", r.getProductsBySeller)
 
 		v1.POST("/auth/register", r.Register)
 		v1.POST("/auth/login", r.Login)

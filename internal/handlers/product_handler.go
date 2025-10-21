@@ -38,12 +38,13 @@ func (r *Router) getProduct(c *gin.Context) {
 	}
 
 	response := dto.ProductResponse{
-		Id:          product.ID,
+		ID:          product.ID,
 		Name:        product.Name,
 		Description: product.Description,
 		Price:       product.Price,
 		ImageUrl:    product.ImageUrl,
 		CategoryID:  product.CategoryID,
+		UserID:      product.UserID,
 		CreatedAt:   product.CreatedAt,
 	}
 
@@ -57,7 +58,6 @@ func (r *Router) getProduct(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Success 200 {object} []dto.ProductResponse
-// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /api/v1/products [get]
 func (r *Router) getAllProducts(c *gin.Context) {
@@ -71,12 +71,61 @@ func (r *Router) getAllProducts(c *gin.Context) {
 	var response []dto.ProductResponse
 	for _, product := range products {
 		response = append(response, dto.ProductResponse{
-			Id:          product.ID,
+			ID:          product.ID,
 			Name:        product.Name,
 			Description: product.Description,
 			Price:       product.Price,
 			ImageUrl:    product.ImageUrl,
 			CategoryID:  product.CategoryID,
+			UserID:      product.UserID,
+			CreatedAt:   product.CreatedAt,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// getProductsBySeller return seller products
+// @Summary Returns seller products
+// @Description Returns all products that were created by seller
+// @Tags Products
+// @Accept json
+// @Produce json
+// @Param id path int true "User Id"
+// @Success 200 {object} []dto.ProductResponse
+// @Failure 400 {object} map[string]string "Bad Request"
+// @Failure 404 {object} map[string]string "Not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/v1/users/{id}/products [get]
+func (r *Router) getProductsBySeller(c *gin.Context) {
+	sellerID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	products, err := r.models.Products.GetAllBySellerID(ctx, uint(sellerID))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve products"})
+		return
+	}
+	if len(products) == 0 {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Products not found"})
+		return
+	}
+
+	var response []dto.ProductResponse
+	for _, product := range products {
+		response = append(response, dto.ProductResponse{
+			ID:          product.ID,
+			Name:        product.Name,
+			Description: product.Description,
+			Price:       product.Price,
+			ImageUrl:    product.ImageUrl,
+			CategoryID:  product.CategoryID,
+			UserID:      product.UserID,
 			CreatedAt:   product.CreatedAt,
 		})
 	}
@@ -132,7 +181,7 @@ func (r *Router) createProduct(c *gin.Context) {
 		return
 	}
 	response := dto.ProductResponse{
-		Id:          product.ID,
+		ID:          product.ID,
 		Name:        product.Name,
 		Description: product.Description,
 		Price:       product.Price,
@@ -214,7 +263,7 @@ func (r *Router) updateProduct(c *gin.Context) {
 	}
 
 	response := dto.ProductResponse{
-		Id:          updatedProduct.ID,
+		ID:          updatedProduct.ID,
 		Name:        updatedProduct.Name,
 		Description: updatedProduct.Description,
 		Price:       updatedProduct.Price,

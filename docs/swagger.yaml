@@ -171,12 +171,6 @@ paths:
             items:
               $ref: '#/definitions/dto.ProductResponse'
             type: array
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
         "500":
           description: Internal server error
           schema:
@@ -372,6 +366,47 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Updates existing product
+      tags:
+      - Products
+  /api/v1/users/{id}/products:
+    get:
+      consumes:
+      - application/json
+      description: Returns all products that were created by seller
+      parameters:
+      - description: User Id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ProductResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Returns seller products
       tags:
       - Products
 securityDefinitions:

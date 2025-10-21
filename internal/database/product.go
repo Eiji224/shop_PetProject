@@ -38,6 +38,13 @@ func (pm *ProductModel) GetAll(ctx context.Context) ([]Product, error) {
 	return products, err
 }
 
+func (pm *ProductModel) GetAllBySellerID(ctx context.Context, sellerID uint) ([]Product, error) {
+	var products []Product
+	err := pm.DB.WithContext(ctx).Find(&products, "user_id = ?", sellerID).Error
+
+	return products, err
+}
+
 func (pm *ProductModel) CreateProduct(ctx context.Context, product *Product) error {
 	err := pm.DB.WithContext(ctx).Create(product).Error
 	return err
