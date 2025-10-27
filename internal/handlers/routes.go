@@ -41,6 +41,12 @@ func (r *Router) Route() http.Handler {
 		authGroup.POST("/products", r.createProduct)
 		authGroup.PUT("/products/:id", r.updateProduct)
 		authGroup.DELETE("/products/:id", r.deleteProduct)
+
+		authGroup.GET("/cart/item", r.getCartItems)
+		authGroup.POST("/cart/item", r.addCartItem)
+		authGroup.PATCH("/cart/item/:id", r.updateCartItemQuantity)
+		authGroup.DELETE("/cart/item/:id", r.deleteCartItem)
+		authGroup.DELETE("/cart/item", r.deleteAllCartItems)
 	}
 
 	g.GET("/swagger/*any", func(c *gin.Context) {

@@ -31,12 +31,22 @@ func (as *AuthService) Register(req dto.RegisterRequest) (resp *dto.RegisterResp
 		Type:     req.Type,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	err = as.models.Users.Insert(&user, ctx)
+	userCtx, userCancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer userCancel()
+	err = as.models.Users.Insert(&user, userCtx)
 	if err != nil {
 		return nil, "Something went wrong", http.StatusInternalServerError
 	}
+
+	cartCtx, cartCancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cartCancel()
+
+	if user.Type == string(dto.TypeCustomer) {
+		if err := as.models.Carts.Create(cartCtx, user.ID); err != nil {
+			return nil, "Something went wrong", http.StatusInternalServerError
+		}
+	}
+
 	token, err := as.getJwtToken(&user)
 	if err != nil {
 		return nil, "Something went wrong", http.StatusInternalServerError
