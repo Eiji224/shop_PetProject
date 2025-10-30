@@ -1,10 +1,4 @@
-package database
-
-import "gorm.io/gorm"
-
-type CategoryModel struct {
-	DB *gorm.DB
-}
+package models
 
 type Category struct {
 	ID   uint   `gorm:"primaryKey;AUTO_INCREMENT"`

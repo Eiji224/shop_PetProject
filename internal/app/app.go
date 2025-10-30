@@ -3,9 +3,8 @@ package app
 import (
 	"fmt"
 	"net/http"
-	"shop/internal/database"
 	"shop/internal/env"
-	"shop/internal/handlers"
+	"shop/internal/repositories"
 	"shop/internal/services"
 	"time"
 )
@@ -13,23 +12,40 @@ import (
 type Application struct {
 	port      int
 	jwtSecret string
-	models    database.Models
-	services  services.Services
+
+	userRepo     repositories.UserRepository
+	productRepo  repositories.ProductRepository
+	cartRepo     repositories.CartRepository
+	cartItemRepo repositories.CartItemRepository
+
+	userService    *services.UserService
+	cartService    *services.CartService
+	productService *services.ProductService
 }
 
-func GetApplication(models database.Models) *Application {
-	services := services.NewServices(env.GetEnvString("JWT_SECRET", "some_secret"), &models)
+func GetApplication(
+	userRepo repositories.UserRepository,
+	productRepo repositories.ProductRepository,
+	cartRepo repositories.CartRepository,
+	cartItemRepo repositories.CartItemRepository) *Application {
 
 	return &Application{
 		port:      env.GetEnvInt("PORT", 8080),
 		jwtSecret: env.GetEnvString("JWT_SECRET", "some_secret"),
-		models:    models,
-		services:  services,
+
+		userRepo:     userRepo,
+		productRepo:  productRepo,
+		cartRepo:     cartRepo,
+		cartItemRepo: cartItemRepo,
+
+		userService:    services.NewUserService(userRepo, cartRepo, env.GetEnvString("JWT_SECRET", "some_secret")),
+		cartService:    services.NewCartService(cartRepo, cartItemRepo),
+		productService: services.NewProductService(productRepo),
 	}
 }
 
 func (app *Application) Serve() error {
-	r := handlers.GetRouter(app.jwtSecret, &app.models, &app.services)
+	r := GetRouter(app)
 
 	server := http.Server{
 		Addr:         fmt.Sprintf(":%d", app.port),

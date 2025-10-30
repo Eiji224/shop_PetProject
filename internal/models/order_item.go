@@ -1,10 +1,4 @@
-package database
-
-import "gorm.io/gorm"
-
-type OrderItemModel struct {
-	DB *gorm.DB
-}
+package models
 
 type OrderItem struct {
 	ID        uint    `gorm:"primaryKey;AUTO_INCREMENT"`

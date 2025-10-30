@@ -3,7 +3,7 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"shop/internal/database"
+	"shop/internal/repositories"
 	"strings"
 	"time"
 
@@ -12,12 +12,12 @@ import (
 )
 
 type Middleware struct {
-	jwtSecret string
-	models    *database.Models
+	jwtSecret      string
+	userRepository repositories.UserRepository
 }
 
-func GetMiddleware(jwtSecret string, models *database.Models) *Middleware {
-	return &Middleware{jwtSecret: jwtSecret, models: models}
+func GetMiddleware(jwtSecret string, userRepository repositories.UserRepository) *Middleware {
+	return &Middleware{jwtSecret: jwtSecret, userRepository: userRepository}
 }
 
 func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
@@ -51,9 +51,9 @@ func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID in token"})
 		}
 		userId := uint(userIdJson)
-		ctx, close := context.WithTimeout(context.Background(), 3*time.Second)
-		defer close()
-		user, err := m.models.Users.FindById(userId, ctx)
+		ctx, closeCtx := context.WithTimeout(context.Background(), 3*time.Second)
+		defer closeCtx()
+		user, err := m.userRepository.FindByID(userId, ctx)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
 			return

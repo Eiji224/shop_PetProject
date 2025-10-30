@@ -43,14 +43,14 @@ definitions:
     type: object
   dto.LoginRequest:
     properties:
+      email:
+        type: string
       password:
         minLength: 8
         type: string
-      username:
-        type: string
     required:
+    - email
     - password
-    - username
     type: object
   dto.LoginResponse:
     properties:
@@ -310,7 +310,7 @@ paths:
       - application/json
       description: Deletes item from cart
       parameters:
-      - description: Cart item Id
+      - description: Cart item ID
         in: path
         name: id
         required: true
@@ -360,7 +360,7 @@ paths:
       - application/json
       description: Updates cart item quantity
       parameters:
-      - description: Cart item Id
+      - description: Cart item ID
         in: path
         name: id
         required: true
@@ -491,7 +491,7 @@ paths:
       - application/json
       description: Deletes existing product
       parameters:
-      - description: Product Id
+      - description: Product ID
         in: path
         name: id
         required: true
@@ -541,7 +541,7 @@ paths:
       - application/json
       description: Returns product by its id
       parameters:
-      - description: Product Id
+      - description: Product ID
         in: path
         name: id
         required: true
@@ -573,7 +573,7 @@ paths:
       - application/json
       description: Updates existing product and returns one
       parameters:
-      - description: Product Id
+      - description: Product ID
         in: path
         name: id
         required: true
@@ -632,7 +632,7 @@ paths:
       - application/json
       description: Returns all products that were created by seller
       parameters:
-      - description: User Id
+      - description: User ID
         in: path
         name: id
         required: true

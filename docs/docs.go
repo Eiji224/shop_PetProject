@@ -339,7 +339,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Cart item Id",
+                        "description": "Cart item ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -416,7 +416,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Cart item Id",
+                        "description": "Cart item ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -613,7 +613,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Product Id",
+                        "description": "Product ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -666,7 +666,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Product Id",
+                        "description": "Product ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -755,7 +755,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Product Id",
+                        "description": "Product ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -829,7 +829,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User Id",
+                        "description": "User ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -944,16 +944,16 @@ const docTemplate = `{
         "dto.LoginRequest": {
             "type": "object",
             "required": [
-                "password",
-                "username"
+                "email",
+                "password"
             ],
             "properties": {
+                "email": {
+                    "type": "string"
+                },
                 "password": {
                     "type": "string",
                     "minLength": 8
-                },
-                "username": {
-                    "type": "string"
                 }
             }
         },

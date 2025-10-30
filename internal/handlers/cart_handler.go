@@ -2,17 +2,26 @@ package handlers
 
 import (
 	"context"
-	"errors"
 	"net/http"
-	"shop/internal/database"
 	"shop/internal/dto"
+	"shop/internal/models"
+	"shop/internal/repositories"
+	"shop/internal/services"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-// addCartItem add product to cart
+type CartHandler struct {
+	cartRepository     repositories.CartRepository
+	cartItemRepository repositories.CartItemRepository
+	productRepository  repositories.ProductRepository
+	userService        *services.UserService
+	cartService        *services.CartService
+}
+
+// AddCartItem add product to cart
 // @Summary Add product to cart
 // @Description Add existing product to cart
 // @Tags Cart
@@ -26,10 +35,9 @@ import (
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Security ApiKeyAuth
 // @Router /api/v1/cart/item [post]
-func (r *Router) addCartItem(c *gin.Context) {
-	user, status := getUser(r, c)
+func (ch *CartHandler) AddCartItem(c *gin.Context) {
+	user := ch.getValidatedUser(c)
 	if user == nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": "You are not allow to do this"})
 		return
 	}
 
@@ -40,20 +48,20 @@ func (r *Router) addCartItem(c *gin.Context) {
 	}
 	productCtx, productCancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer productCancel()
-	if _, err := r.models.Products.GetProduct(productCtx, itemReq.ProductID); err != nil {
+	if _, err := ch.productRepository.GetProduct(itemReq.ProductID, productCtx); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	cartCtx, cartCancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cartCancel()
-	cart, err := r.models.Carts.Get(cartCtx, user.ID)
+	cart, err := ch.cartRepository.Get(user.ID, cartCtx)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong"})
 		return
 	}
 
-	cartItem := &database.CartItem{
+	cartItem := &models.CartItem{
 		CartID:    cart.ID,
 		ProductID: itemReq.ProductID,
 		Quantity:  itemReq.Quantity,
@@ -62,7 +70,7 @@ func (r *Router) addCartItem(c *gin.Context) {
 
 	itemCtx, itemCancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer itemCancel()
-	err = r.models.CartItems.Create(itemCtx, cartItem)
+	err = ch.cartItemRepository.Create(cartItem, itemCtx)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -78,7 +86,7 @@ func (r *Router) addCartItem(c *gin.Context) {
 	c.JSON(http.StatusCreated, itemResponse)
 }
 
-// getCartItems get cart items
+// GetCartItems get cart items
 // @Summary Gets all items in cart
 // @Description Gets all items in cart
 // @Tags Cart
@@ -90,16 +98,15 @@ func (r *Router) addCartItem(c *gin.Context) {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Security ApiKeyAuth
 // @Router /api/v1/cart/item [get]
-func (r *Router) getCartItems(c *gin.Context) {
-	user, status := getUser(r, c)
+func (ch *CartHandler) GetCartItems(c *gin.Context) {
+	user := ch.getValidatedUser(c)
 	if user == nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": "You are not allow to do this"})
 		return
 	}
 
 	itemCtx, itemCancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer itemCancel()
-	cartItems, err := r.models.CartItems.GetAllByCartID(itemCtx, user.Cart.ID)
+	cartItems, err := ch.cartItemRepository.GetAllByCartID(user.Cart.ID, itemCtx)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -119,13 +126,13 @@ func (r *Router) getCartItems(c *gin.Context) {
 	c.JSON(http.StatusOK, itemsResponse)
 }
 
-// updateCartItemQuantity update cart item quantity
+// UpdateCartItemQuantity update cart item quantity
 // @Summary Updates cart item quantity
 // @Description Updates cart item quantity
 // @Tags Cart
 // @Accept json
 // @Produce json
-// @Param id path uint true "Cart item Id"
+// @Param id path uint true "Cart item ID"
 // @Param Quantity body dto.CartItemUpdateRequest true "Item quantity"
 // @Success 200 {object} map[string]string "ok"
 // @Failure 400 {object} map[string]string "Bad request"
@@ -135,10 +142,9 @@ func (r *Router) getCartItems(c *gin.Context) {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Security ApiKeyAuth
 // @Router /api/v1/cart/item/{id} [patch]
-func (r *Router) updateCartItemQuantity(c *gin.Context) {
-	user, status := getUser(r, c)
+func (ch *CartHandler) UpdateCartItemQuantity(c *gin.Context) {
+	user := ch.getValidatedUser(c)
 	if user == nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": "You are not allow to do this"})
 		return
 	}
 
@@ -157,14 +163,16 @@ func (r *Router) updateCartItemQuantity(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err, status := checkItemBelongsCart(r, id, user); status != http.StatusOK {
+	checkCtx, checkCancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer checkCancel()
+	if status, err := ch.cartService.CheckItemBelongsToCart(id, user, checkCtx); status != http.StatusOK {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
 
 	itemCtx, itemCancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer itemCancel()
-	if err := r.models.CartItems.UpdateQuantity(itemCtx, uint(id), itemReq.Quantity); err != nil {
+	if err := ch.cartItemRepository.UpdateQty(uint(id), itemReq.Quantity, itemCtx); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -172,13 +180,13 @@ func (r *Router) updateCartItemQuantity(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-// deleteCartItem delete cart item
+// DeleteCartItem delete cart item
 // @Summary Deletes item from cart
 // @Description Deletes item from cart
 // @Tags Cart
 // @Accept json
 // @Produce json
-// @Param id path uint true "Cart item Id"
+// @Param id path uint true "Cart item ID"
 // @Success 204 {object} nil
 // @Failure 400 {object} map[string]string "Bad request"
 // @Failure 401 {object} map[string]string "Unauthorized"
@@ -187,34 +195,35 @@ func (r *Router) updateCartItemQuantity(c *gin.Context) {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Security ApiKeyAuth
 // @Router /api/v1/cart/item/{id} [delete]
-func (r *Router) deleteCartItem(c *gin.Context) {
+func (ch *CartHandler) DeleteCartItem(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	user, status := getUser(r, c)
+	user := ch.getValidatedUser(c)
 	if user == nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": "You are not allow to do this"})
 		return
 	}
 
-	if err, status := checkItemBelongsCart(r, id, user); status != http.StatusOK {
+	checkCtx, checkCancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer checkCancel()
+	if status, err := ch.cartService.CheckItemBelongsToCart(id, user, checkCtx); status != http.StatusOK {
 		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
 		return
 	}
 
 	deleteCtx, deleteCancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer deleteCancel()
-	if err := r.models.CartItems.DeleteCartItem(deleteCtx, uint(id)); err != nil {
+	if err := ch.cartItemRepository.DeleteItem(uint(id), deleteCtx); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusNoContent, nil)
+	c.Status(http.StatusNoContent)
 }
 
-// deleteAllCartItems delete all cart items
+// DeleteAllCartItems delete all cart items
 // @Summary Deletes all items from cart
 // @Description Deletes all items from cart
 // @Tags Cart
@@ -227,55 +236,50 @@ func (r *Router) deleteCartItem(c *gin.Context) {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Security ApiKeyAuth
 // @Router /api/v1/cart/item [delete]
-func (r *Router) deleteAllCartItems(c *gin.Context) {
-	user, status := getUser(r, c)
+func (ch *CartHandler) DeleteAllCartItems(c *gin.Context) {
+	user := ch.getValidatedUser(c)
 	if user == nil {
-		c.AbortWithStatusJSON(status, gin.H{"error": "You are not allow to do this"})
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
-	if err := r.models.CartItems.DeleteAllCartItems(ctx, user.Cart.ID); err != nil {
+	if err := ch.cartItemRepository.DeleteAll(user.Cart.ID, ctx); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusNoContent, nil)
+	c.Status(http.StatusNoContent)
 }
 
-func getUser(r *Router, c *gin.Context) (*database.User, int) {
-	user := r.services.AuthService.GetUserFromContext(c)
-	if user == nil {
-		return nil, http.StatusUnauthorized
+func (ch *CartHandler) getValidatedUser(c *gin.Context) *models.User {
+	user, status := ch.userService.GetUserFromContext(c)
+	if status == http.StatusUnauthorized {
+		c.AbortWithStatusJSON(status, gin.H{"error": "unauthorized"})
+		return nil
 	}
-	if user.Type != string(dto.TypeCustomer) {
-		return nil, http.StatusForbidden
-	}
-
-	preloadCtx, preloadCancel := context.WithTimeout(context.Background(), time.Second*3)
-	defer preloadCancel()
-	if err := r.models.Carts.Preload(preloadCtx, user); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return nil, http.StatusInternalServerError
-	}
-
-	return user, http.StatusOK
-}
-
-func checkItemBelongsCart(r *Router, id int, user *database.User) (error, int) {
-	getCtx, getCancel := context.WithTimeout(context.Background(), time.Second*3)
-	defer getCancel()
-	existingItem, err := r.models.CartItems.GetCartItem(getCtx, uint(id))
+	status, err := ch.cartService.ValidateUser(user)
 	if err != nil {
-		return err, http.StatusInternalServerError
-	}
-	if existingItem == nil {
-		return errors.New("Not exist"), http.StatusNotFound
-	}
-	if user.Cart.ID != existingItem.CartID {
-		return errors.New("You are not allow to do this"), http.StatusForbidden
+		c.AbortWithStatusJSON(status, gin.H{"error": err.Error()})
+		return nil
 	}
 
-	return nil, http.StatusOK
+	return user
+}
+
+func NewCartHandler(
+	cartRepository repositories.CartRepository,
+	cartItemRepository repositories.CartItemRepository,
+	productRepository repositories.ProductRepository,
+	userService *services.UserService,
+	cartService *services.CartService,
+) *CartHandler {
+
+	return &CartHandler{
+		cartRepository:     cartRepository,
+		cartItemRepository: cartItemRepository,
+		productRepository:  productRepository,
+		userService:        userService,
+		cartService:        cartService,
+	}
 }

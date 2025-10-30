@@ -1,6 +1,9 @@
 package dto
 
-import "time"
+import (
+	"shop/internal/models"
+	"time"
+)
 
 type CreateUpdateProductRequest struct {
 	Name        string  `json:"name" binding:"required"`
@@ -19,4 +22,17 @@ type ProductResponse struct {
 	CategoryID  uint      `json:"category_id"`
 	UserID      uint      `json:"user_id"`
 	CreatedAt   time.Time `json:"created_at"`
+}
+
+func ProductToResp(product *models.Product) *ProductResponse {
+	return &ProductResponse{
+		ID:          product.ID,
+		Name:        product.Name,
+		Description: product.Description,
+		Price:       product.Price,
+		ImageUrl:    product.ImageUrl,
+		CategoryID:  product.CategoryID,
+		UserID:      product.UserID,
+		CreatedAt:   product.CreatedAt,
+	}
 }
