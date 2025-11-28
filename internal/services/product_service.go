@@ -17,14 +17,11 @@ type ProductService struct {
 
 func (ps *ProductService) GetProductIfAuthorized(id uint, user *models.User, ctx context.Context) (*models.Product, int, error) {
 	product, err := ps.productRepository.GetProduct(id, ctx)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, http.StatusNotFound, errors.New("product not found")
-	}
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, http.StatusNotFound, errors.New("product not found")
+		}
 		return nil, http.StatusInternalServerError, errors.New("failed to retrieve product")
-	}
-	if product == nil {
-		return nil, http.StatusNotFound, errors.New("product not found")
 	}
 
 	if user.ID != product.UserID || user.Type != string(dto.TypeSeller) {
