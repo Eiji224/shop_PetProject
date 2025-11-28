@@ -7,6 +7,8 @@ import (
 	"shop/internal/dto"
 	"shop/internal/models"
 	"shop/internal/repositories"
+
+	"gorm.io/gorm"
 )
 
 type CartService struct {
@@ -25,10 +27,10 @@ func (cs *CartService) ValidateUser(user *models.User) (int, error) {
 func (cs *CartService) CheckItemBelongsToCart(id int, user *models.User, ctx context.Context) (int, error) {
 	existingItem, err := cs.cartItemRepository.GetItem(uint(id), ctx)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return http.StatusNotFound, errors.New("not exists")
+		}
 		return http.StatusInternalServerError, err
-	}
-	if existingItem == nil {
-		return http.StatusNotFound, errors.New("not exist")
 	}
 	if user.Cart.ID != existingItem.CartID {
 		return http.StatusForbidden, errors.New("you are not allow to do this")
